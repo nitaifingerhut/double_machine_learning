@@ -84,17 +84,19 @@ class MLPEstimator2(BaseEstimator):
         self.dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
         self.net = Net(num_features, **kwargs).to(self.device).type(self.dtype)
 
-    def predict(self, X: np.ndarray) -> Tuple[np.ndarray,np.ndarray]:
+    def predict(self, X: np.ndarray, D: np.ndarray) -> Tuple[np.ndarray,np.ndarray]:
         """
         Predict for a given input.
         :param X: a numpy 2d array of shape (num_samples,num_features).
+        :param D: a numpy 2d array of shape (num_samples,1).
         :return: predictions as a numpy arrays of size (num_samples,).
         """
         X = torch.from_numpy(X).to(self.device).type(self.dtype)
-        pred = self.net(X)
-        return pred.detach().cpu().numpy().squeeze()
+        D = torch.from_numpy(D).to(self.device).type(self.dtype)
+        m_pred, l_pred = self.net(X, D)
+        return m_pred.detach().cpu().numpy().squeeze(), l_pred.detach().cpu().numpy().squeeze()
 
-    def fit(self, X: np.ndarray, D: np.ndarray, Y: np.ndarray, batch_size: int = 32, max_epochs: int = 100, print_every: int = 5):
+    def fit(self, X: np.ndarray, D: np.ndarray, Y: np.ndarray, batch_size: int = 32, max_epochs: int = 10, print_every: int = 25):
         """
         Fit the model to the data.
         :param X: a numpy 2d array of shape (num_samples,num_features).
@@ -132,8 +134,8 @@ class MLPEstimator2(BaseEstimator):
                 optimizer.step()
                 losses.append(loss.item())
 
-            if epoch % print_every == 0:
-                print('[{:6d}] [{:7.4f}]'.format(epoch, losses[-1]))
+            # if epoch % print_every == 0:
+            #     print('[{:6d}] [{:7.4f}]'.format(epoch, losses[-1]))
 
         return self
         # _, axs = plt.subplots(1, 1, figsize=(5,5))
