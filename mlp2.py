@@ -7,7 +7,7 @@ import torch.optim as optim
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
 from typing import List, Tuple
-from utils import *
+from mlp_estimator.utils import *
 
 
 ACTIVATIONS = {
