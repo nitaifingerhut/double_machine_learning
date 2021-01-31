@@ -1,13 +1,12 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from double_machine_learning.utils import np_to_torch, torch_to_np
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
 from typing import List, Tuple
-from mlp_estimator.utils import *
 
 
 ACTIVATIONS = {
@@ -114,7 +113,6 @@ class MLPEstimator2(BaseEstimator):
         mse_loss = torch.nn.MSELoss()
         optimizer = optim.Adam(self.net.parameters(), lr=0.001, betas=(0.9, 0.999))
 
-        losses = []
         for epoch in range(max_epochs):
             for i, data in enumerate(dataloader, 0):
 
@@ -132,16 +130,5 @@ class MLPEstimator2(BaseEstimator):
                 loss = mse_loss(torch.zeros_like(dm), dm ** 2) + mse_loss(torch.zeros_like(dl), dl ** 2)
                 loss.backward()
                 optimizer.step()
-                losses.append(loss.item())
-
-            # if epoch % print_every == 0:
-            #     print('[{:6d}] [{:7.4f}]'.format(epoch, losses[-1]))
 
         return self
-        # _, axs = plt.subplots(1, 1, figsize=(5,5))
-        # axs.plot(np.arange(len(losses)), losses)
-        # axs.set_xlabel('batch', fontsize=14)
-        # axs.set_ylabel('loss', fontsize=14)
-        # plt.show()
-
-        # return self
