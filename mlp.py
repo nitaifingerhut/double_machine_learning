@@ -7,6 +7,7 @@ import torch.optim as optim
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
 from typing import List, Tuple
+from utils import *
 
 
 ACTIVATIONS = {
@@ -74,9 +75,7 @@ class MLPEstimator(BaseEstimator):
         :param reg_lambda: regularization factor to control the bias-variance ratio.
 
         """
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
-        self.net = Net(num_features, **kwargs).to(self.device).type(self.dtype)
+        self.net = Net(num_features, **kwargs).to(DEVICE).type(DTYPE)
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray,np.ndarray]:
         """
@@ -84,9 +83,9 @@ class MLPEstimator(BaseEstimator):
         :param X: a numpy 2d array of shape (num_samples,num_features).
         :return: predictions as a numpy arrays of size (num_samples,).
         """
-        X = torch.from_numpy(X).to(self.device).type(self.dtype)
+        X = np_to_torch(X)
         pred = self.net(X)
-        return pred.detach().cpu().numpy().squeeze()
+        return np_to_torch(pred)
 
     def fit(self, X: np.ndarray, y: np.ndarray, batch_size: int = 32, max_epochs: int = 10, print_every: int = 25):
         """
@@ -97,8 +96,8 @@ class MLPEstimator(BaseEstimator):
         :param max_epochs: max epochs to train.
         :param print_every: print status every number of epochs.
         """
-        X = torch.from_numpy(X).to(self.device).type(self.dtype)
-        y = torch.from_numpy(y).to(self.device).type(self.dtype)
+        X = np_to_torch(X)
+        Y = np_to_torch(Y)
         dataset = TensorDataset(X, y)
         dataloader = DataLoader(dataset, batch_size=batch_size)
 

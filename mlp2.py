@@ -7,6 +7,7 @@ import torch.optim as optim
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
 from typing import List, Tuple
+from utils import *
 
 
 ACTIVATIONS = {
@@ -80,9 +81,7 @@ class MLPEstimator2(BaseEstimator):
 
         """
         self.true_model = true_model
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.dtype = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
-        self.net = Net(num_features, **kwargs).to(self.device).type(self.dtype)
+        self.net = Net(num_features, **kwargs).to(DEVICE).type(DTYPE)
 
     def predict(self, X: np.ndarray, D: np.ndarray) -> Tuple[np.ndarray,np.ndarray]:
         """
@@ -91,10 +90,10 @@ class MLPEstimator2(BaseEstimator):
         :param D: a numpy 2d array of shape (num_samples,1).
         :return: predictions as a numpy arrays of size (num_samples,).
         """
-        X = torch.from_numpy(X).to(self.device).type(self.dtype)
-        D = torch.from_numpy(D).to(self.device).type(self.dtype)
+        X = np_to_torch(X)
+        D = np_to_torch(D)
         m_pred, l_pred = self.net(X, D)
-        return m_pred.detach().cpu().numpy().squeeze(), l_pred.detach().cpu().numpy().squeeze()
+        return torch_to_np(m_pred), torch_to_np(l_pred)
 
     def fit(self, X: np.ndarray, D: np.ndarray, Y: np.ndarray, batch_size: int = 32, max_epochs: int = 10, print_every: int = 25):
         """
@@ -106,9 +105,9 @@ class MLPEstimator2(BaseEstimator):
         :param max_epochs: max epochs to train.
         :param print_every: print status every number of epochs.
         """
-        X = torch.from_numpy(X).to(self.device).type(self.dtype)
-        D = torch.from_numpy(D).to(self.device).type(self.dtype)
-        Y = torch.from_numpy(Y).to(self.device).type(self.dtype)
+        X = np_to_torch(X)
+        D = np_to_torch(D)
+        Y = np_to_torch(Y)
         dataset = TensorDataset(X, D, Y)
         dataloader = DataLoader(dataset, batch_size=batch_size)
 
@@ -123,8 +122,9 @@ class MLPEstimator2(BaseEstimator):
                 x, d, y = data
                 m_pred, l_pred = self.net(x, d)
 
-                gt_m = self.true_model.m0(x)
-                gt_l = d * self.true_model.theta + self.true_model.g0(x)
+                x_np = torch_to_np(x)
+                gt_m = np_to_torch(self.true_model.m0(x_np))
+                gt_l = d * self.true_model.theta + np_to_torch(self.true_model.g0(x_np))
 
                 dm = gt_m - m_pred
                 dl = gt_l - l_pred
