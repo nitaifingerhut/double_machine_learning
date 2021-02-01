@@ -63,7 +63,7 @@ class Net(nn.Module):
         return pred[:, 0], pred[:, 1]
 
 
-class MLPEstimator2(BaseEstimator):
+class DoubleMLPEstimator(BaseEstimator):
 
     def __init__(
             self,

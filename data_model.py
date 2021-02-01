@@ -58,8 +58,8 @@ class DataModel:
         with torch.no_grad():
             mvn = np.random.multivariate_normal(self.mu, self.sigma, n)
             X = np_to_torch(mvn)
-            D = self.m0(X) + 0.1 * torch.randn(n, dtype=DTYPE, device=DEVICE)
-            Y = D * self.theta + self.g0(X) + 0.1 * torch.randn(n, dtype=DTYPE, device=DEVICE)
+            D = self.m0(X) + 0.1 * np_to_torch(np.random.randn(n,))
+            Y = D * self.theta + self.g0(X) + 0.1 * np_to_torch(np.random.randn(n,))
         return Y, D, X
 
     def covariance_AR1(self, p: int, rho: float):
