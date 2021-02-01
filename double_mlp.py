@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from double_machine_learning.utils import np_to_torch, torch_to_np
+from double_machine_learning.utils import *
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
 from typing import List, Tuple
@@ -82,19 +82,17 @@ class DoubleMLPEstimator(BaseEstimator):
         self.true_model = true_model
         self.net = Net(num_features, **kwargs).to(DEVICE).type(DTYPE)
 
-    def predict(self, X: np.ndarray, D: np.ndarray) -> Tuple[np.ndarray,np.ndarray]:
+    def predict(self, X: torch.Tensor, D: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Predict for a given input.
         :param X: a numpy 2d array of shape (num_samples,num_features).
         :param D: a numpy 2d array of shape (num_samples,1).
         :return: predictions as a numpy arrays of size (num_samples,).
         """
-        X = np_to_torch(X)
-        D = np_to_torch(D)
         m_pred, l_pred = self.net(X, D)
-        return torch_to_np(m_pred), torch_to_np(l_pred)
+        return m_pred, l_pred
 
-    def fit(self, X: np.ndarray, D: np.ndarray, Y: np.ndarray, batch_size: int = 32, max_epochs: int = 10, print_every: int = 25):
+    def fit(self, X: torch.Tensor, D: torch.Tensor, Y: torch.Tensor, batch_size: int = 32, max_epochs: int = 10, print_every: int = 25):
         """
         Fit the model to the data.
         :param X: a numpy 2d array of shape (num_samples,num_features).
@@ -104,9 +102,6 @@ class DoubleMLPEstimator(BaseEstimator):
         :param max_epochs: max epochs to train.
         :param print_every: print status every number of epochs.
         """
-        X = np_to_torch(X)
-        D = np_to_torch(D)
-        Y = np_to_torch(Y)
         dataset = TensorDataset(X, D, Y)
         dataloader = DataLoader(dataset, batch_size=batch_size)
 
@@ -120,9 +115,8 @@ class DoubleMLPEstimator(BaseEstimator):
                 x, d, y = data
                 m_pred, l_pred = self.net(x, d)
 
-                x_np = torch_to_np(x)
-                gt_m = np_to_torch(self.true_model.m0(x_np))
-                gt_l = d * self.true_model.theta + np_to_torch(self.true_model.g0(x_np))
+                gt_m = self.true_model.m0(x)
+                gt_l = d * self.true_model.theta + self.true_model.g0(x)
 
                 dm = gt_m - m_pred
                 dl = gt_l - l_pred

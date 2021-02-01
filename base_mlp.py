@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from double_machine_learning.utils import np_to_torch, torch_to_np
+from double_machine_learning.utils import *
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
 from typing import List, Tuple
@@ -76,17 +76,16 @@ class BaseMLPEstimator(BaseEstimator):
         """
         self.net = Net(num_features, **kwargs).to(DEVICE).type(DTYPE)
 
-    def predict(self, X: np.ndarray) -> Tuple[np.ndarray,np.ndarray]:
+    def predict(self, X: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Predict for a given input.
         :param X: a numpy 2d array of shape (num_samples,num_features).
         :return: predictions as a numpy arrays of size (num_samples,).
         """
-        X = np_to_torch(X)
         pred = self.net(X)
-        return np_to_torch(pred)
+        return pred
 
-    def fit(self, X: np.ndarray, y: np.ndarray, batch_size: int = 32, max_epochs: int = 10, print_every: int = 25):
+    def fit(self, X: torch.Tensor, y: torch.Tensor, batch_size: int = 32, max_epochs: int = 10, print_every: int = 25):
         """
         Fit the model to the data.
         :param X: a numpy 2d array of shape (num_samples,num_features).
@@ -95,8 +94,6 @@ class BaseMLPEstimator(BaseEstimator):
         :param max_epochs: max epochs to train.
         :param print_every: print status every number of epochs.
         """
-        X = np_to_torch(X)
-        Y = np_to_torch(Y)
         dataset = TensorDataset(X, y)
         dataloader = DataLoader(dataset, batch_size=batch_size)
 
