@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from double_machine_learning.utils import *
+from utils import *
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
 from typing import List, Tuple
@@ -107,7 +107,8 @@ class DoubleMLPEstimator(BaseEstimator):
 
         mse_loss = torch.nn.MSELoss()
         optimizer = optim.Adam(self.net.parameters(), lr=0.001, betas=(0.9, 0.999))
-
+            
+        true_theta = self.true_model.theta
         for epoch in range(max_epochs):
             for i, data in enumerate(dataloader, 0):
 
@@ -120,8 +121,12 @@ class DoubleMLPEstimator(BaseEstimator):
 
                 dm = gt_m - m_pred
                 dl = gt_l - l_pred
+                
+                theta_hat, _ = est_theta(y, d, m_pred, l_pred)
+                
+                loss = mse_loss(torch.zeros_like(theta_hat), torch.square(true_theta - theta_hat))
+#                 loss = mse_loss(torch.zeros_like(dm), dm ** 2) + mse_loss(torch.zeros_like(dl), dl ** 2) + mse_loss(torch.zeros_like(dm), torch.abs(dm * dl)) 
 
-                loss = mse_loss(torch.zeros_like(dm), dm ** 2) + mse_loss(torch.zeros_like(dl), dl ** 2)
                 loss.backward()
                 optimizer.step()
 

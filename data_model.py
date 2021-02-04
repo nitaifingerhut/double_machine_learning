@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from double_machine_learning.utils import *
+from utils import *
 from functools import reduce
 from operator import mul
 

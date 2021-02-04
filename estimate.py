@@ -1,21 +1,18 @@
 import torch
 
-from double_machine_learning.base_mlp import BaseMLPEstimator
-from double_machine_learning.double_mlp import DoubleMLPEstimator
-
+from base_mlp import BaseMLPEstimator
+from double_mlp import DoubleMLPEstimator
+from utils import est_theta
+    
 
 def exp_stats(Y: torch.Tensor, D: torch.Tensor, X: torch.Tensor,
               m_hat: torch.Tensor, l_hat: torch.Tensor, true_model):
+    
     with torch.no_grad():
-        # Compute V_hat
-        V_hat = (D - m_hat)
-
-        # Mean squared V-hat
-        v2 = torch.mean(V_hat * V_hat)
-
+        
         # Estimate theta
-        theta_hat = torch.mean(V_hat * (Y - l_hat)) / v2
-
+        theta_hat, v2 = est_theta(Y, D, m_hat, l_hat)
+    
         # Computing residuals
         m = true_model.m0(X)
         l = true_model.g0(X) + true_model.theta * m
@@ -34,7 +31,6 @@ def exp_stats(Y: torch.Tensor, D: torch.Tensor, X: torch.Tensor,
 
 
 def base_dml(Y: torch.Tensor, D: torch.Tensor, X: torch.Tensor, true_model):
-
 
     bbox = BaseMLPEstimator(X.shape[1],
                         hidden_dims=(32, 32, 32),
