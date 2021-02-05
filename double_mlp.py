@@ -123,9 +123,11 @@ class DoubleMLPEstimator(BaseEstimator):
                 dl = gt_l - l_pred
                 
                 theta_hat, _ = est_theta(y, d, m_pred, l_pred)
+                bias = dm * dl - theta_hat * (dm ** 2)
                 
-                loss = mse_loss(torch.zeros_like(theta_hat), torch.square(true_theta - theta_hat))
+#                 loss = mse_loss(torch.zeros_like(bias), bias ** 2)
 #                 loss = mse_loss(torch.zeros_like(dm), dm ** 2) + mse_loss(torch.zeros_like(dl), dl ** 2) + mse_loss(torch.zeros_like(dm), torch.abs(dm * dl)) 
+                loss = mse_loss(torch.zeros_like(dm), dm ** 2) + mse_loss(torch.zeros_like(dl), dl ** 2) + mse_loss(torch.zeros_like(dm), dm * dl) 
 
                 loss.backward()
                 optimizer.step()
