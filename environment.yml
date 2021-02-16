@@ -1,0 +1,21 @@
+name: double-machine-learning
+channels:
+- pytorch
+- defaults
+dependencies:
+- cffi
+- cmake
+- jupyter
+- matplotlib
+- mkl
+- nb_conda
+- numpy
+- pytorch
+- pyyaml
+- scikit-image
+- scikit-learn
+- scipy
+- seaborn
+- setuptools
+- torchvision
+- tqdm

@@ -1,20 +1,30 @@
 import numpy as np
 import torch
 
+from typing import Tuple
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DTYPE = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
 
-def np_to_torch(X: np.ndarray) -> torch.Tensor:
+def np_to_torch(
+    X: np.ndarray
+) -> torch.Tensor:
     return torch.from_numpy(X).to(DEVICE).type(DTYPE)
 
 
-def torch_to_np(X: torch.Tensor) -> np.ndarray:
+def torch_to_np(
+    X: torch.Tensor
+) -> np.ndarray:
     return X.detach().cpu().numpy()
 
 
-def est_theta(Y: torch.Tensor, D: torch.Tensor, 
-              m_hat: torch.Tensor, l_hat: torch.Tensor) -> torch.Tensor:
+def est_theta(
+    Y: torch.Tensor, 
+    D: torch.Tensor, 
+    m_hat: torch.Tensor, 
+    l_hat: torch.Tensor
+) -> Tuple[torch.Tensor, torch.Tensor]:
 
     # Compute V_hat
     V_hat = (D - m_hat)

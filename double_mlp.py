@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
@@ -107,8 +108,8 @@ class DoubleMLPEstimator(BaseEstimator):
 
         mse_loss = torch.nn.MSELoss()
         optimizer = optim.Adam(self.net.parameters(), lr=0.001, betas=(0.9, 0.999))
-            
-        true_theta = self.true_model.theta
+        
+        losses = np.empty((max_epochs, len(dataloader), 3))
         for epoch in range(max_epochs):
             for i, data in enumerate(dataloader, 0):
 
@@ -116,20 +117,33 @@ class DoubleMLPEstimator(BaseEstimator):
                 x, d, y = data
                 m_pred, l_pred = self.net(x, d)
 
-                gt_m = self.true_model.m0(x)
-                gt_l = d * self.true_model.theta + self.true_model.g0(x)
-
-                dm = gt_m - m_pred
-                dl = gt_l - l_pred
+                dm = d - m_pred
+                dl = y - l_pred
                 
                 theta_hat, _ = est_theta(y, d, m_pred, l_pred)
                 bias = dm * dl - theta_hat * (dm ** 2)
                 
-#                 loss = mse_loss(torch.zeros_like(bias), bias ** 2)
-#                 loss = mse_loss(torch.zeros_like(dm), dm ** 2) + mse_loss(torch.zeros_like(dl), dl ** 2) + mse_loss(torch.zeros_like(dm), torch.abs(dm * dl)) 
-                loss = mse_loss(torch.zeros_like(dm), dm ** 2) + mse_loss(torch.zeros_like(dl), dl ** 2) + mse_loss(torch.zeros_like(dm), dm * dl) 
-
+#                 loss = torch.mean(bias) ** 2
+                loss_dm = mse_loss(m_pred, d)
+                loss_dl = mse_loss(l_pred, y)
+                loss_dm_dl = torch.abs(torch.mean(dm * dl))
+                loss = loss_dm + loss_dl + loss_dm_dl
+                
+                losses[epoch, i, 0] = loss_dm.item()
+                losses[epoch, i, 1] = loss_dl.item()
+                losses[epoch, i, 2] = loss_dm_dl.item()
+                
                 loss.backward()
                 optimizer.step()
 
+#         _, axs = plt.subplots(1, 3, figsize=(15, 5))
+#         x_axis = np.arange(0, max_epochs)
+#         axs[0].plot(x_axis, np.mean(losses[:, 0], axis=1))
+#         axs[0].set_title('MSE: $\\Delta m$')
+#         axs[1].plot(x_axis, np.mean(losses[:, 1], axis=1))
+#         axs[1].set_title('MSE: $\\Delta l$')
+#         axs[2].plot(x_axis, np.mean(losses[:, 2], axis=1))
+#         axs[2].set_title('$| MEAN(\\Delta m \\Delta l) |$')
+#         plt.show()
+        
         return self

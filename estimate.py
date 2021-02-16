@@ -3,10 +3,16 @@ import torch
 from base_mlp import BaseMLPEstimator
 from double_mlp import DoubleMLPEstimator
 from utils import est_theta
-    
+from typing import Tuple
 
-def exp_stats(Y: torch.Tensor, D: torch.Tensor, X: torch.Tensor,
-              m_hat: torch.Tensor, l_hat: torch.Tensor, true_model):
+
+def exp_stats(
+    Y: torch.Tensor, 
+    D: torch.Tensor, 
+    X: torch.Tensor,
+    m_hat: torch.Tensor, 
+    l_hat: torch.Tensor, true_model
+) -> Tuple[float, float, float, float, float]:
     
     with torch.no_grad():
         
@@ -30,7 +36,12 @@ def exp_stats(Y: torch.Tensor, D: torch.Tensor, X: torch.Tensor,
     return theta_hat.item(), dm_dl.item(), dm_2.item(), bias.item(), v2.item()
 
 
-def base_dml(Y: torch.Tensor, D: torch.Tensor, X: torch.Tensor, true_model):
+def base_dml(
+    Y: torch.Tensor, 
+    D: torch.Tensor, 
+    X: torch.Tensor, 
+    true_model
+) -> Tuple[float, float, float, float, float]:
 
     bbox = BaseMLPEstimator(X.shape[1],
                         hidden_dims=(32, 32, 32),
@@ -54,7 +65,12 @@ def base_dml(Y: torch.Tensor, D: torch.Tensor, X: torch.Tensor, true_model):
     return exp_stats(Y[idx_2], D[idx_2], X[idx_2], m_hat, l_hat, true_model)
 
 
-def prop_dml(Y: torch.Tensor, D: torch.Tensor, X: torch.Tensor, true_model):
+def prop_dml(
+    Y: torch.Tensor, 
+    D: torch.Tensor, 
+    X: torch.Tensor, 
+    true_model
+) -> Tuple[float, float, float, float, float]:
     bbox = DoubleMLPEstimator(true_model, X.shape[1]+1,
                          hidden_dims=(32, 32, 32),
                          activation_params=dict(negative_slope=0.1))
