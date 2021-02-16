@@ -93,7 +93,7 @@ class DoubleMLPEstimator(BaseEstimator):
         m_pred, l_pred = self.net(X, D)
         return m_pred, l_pred
 
-    def fit(self, X: torch.Tensor, D: torch.Tensor, Y: torch.Tensor, batch_size: int = 32, max_epochs: int = 10, print_every: int = 25):
+    def fit(self, X: torch.Tensor, D: torch.Tensor, Y: torch.Tensor, batch_size: int = 32, max_epochs: int = 10, print_every: int = 25, reg_labmda: float = 1.):
         """
         Fit the model to the data.
         :param X: a numpy 2d array of shape (num_samples,num_features).
@@ -109,14 +109,17 @@ class DoubleMLPEstimator(BaseEstimator):
         mse_loss = torch.nn.MSELoss()
         optimizer = optim.Adam(self.net.parameters(), lr=0.001, betas=(0.9, 0.999))
         
-        losses = np.empty((max_epochs, len(dataloader), 3))
+        
+        dat_losses = []
+        mix_losses = []
+        tot_losses = []
         for epoch in range(max_epochs):
             for i, data in enumerate(dataloader, 0):
 
                 self.net.zero_grad()
                 x, d, y = data
                 m_pred, l_pred = self.net(x, d)
-
+                
                 dm = d - m_pred
                 dl = y - l_pred
                 
@@ -124,26 +127,20 @@ class DoubleMLPEstimator(BaseEstimator):
                 bias = dm * dl - theta_hat * (dm ** 2)
                 
 #                 loss = torch.mean(bias) ** 2
-                loss_dm = mse_loss(m_pred, d)
-                loss_dl = mse_loss(l_pred, y)
-                loss_dm_dl = torch.abs(torch.mean(dm * dl))
-                loss = loss_dm + loss_dl + loss_dm_dl
+                dat_loss = mse_loss(m_pred, d) + mse_loss(l_pred, y)
+                mix_loss = torch.abs(torch.mean(dm * dl))
+                loss = dat_loss + reg_labmda * mix_loss
                 
-                losses[epoch, i, 0] = loss_dm.item()
-                losses[epoch, i, 1] = loss_dl.item()
-                losses[epoch, i, 2] = loss_dm_dl.item()
-                
+                dat_losses.append(dat_loss.item())
+                mix_losses.append(mix_loss.item())
+                tot_losses.append(loss.item())
+   
                 loss.backward()
                 optimizer.step()
 
-#         _, axs = plt.subplots(1, 3, figsize=(15, 5))
-#         x_axis = np.arange(0, max_epochs)
-#         axs[0].plot(x_axis, np.mean(losses[:, 0], axis=1))
-#         axs[0].set_title('MSE: $\\Delta m$')
-#         axs[1].plot(x_axis, np.mean(losses[:, 1], axis=1))
-#         axs[1].set_title('MSE: $\\Delta l$')
-#         axs[2].plot(x_axis, np.mean(losses[:, 2], axis=1))
-#         axs[2].set_title('$| MEAN(\\Delta m \\Delta l) |$')
-#         plt.show()
         
-        return self
+        dat_losses = np.expand_dims(np.asarray(dat_losses), axis=1)
+        mix_losses = np.expand_dims(np.asarray(mix_losses), axis=1)
+        tot_losses = np.expand_dims(np.asarray(tot_losses), axis=1)
+        losses = np.concatenate((dat_losses, mix_losses, tot_losses), axis=1) 
+        return self, losses

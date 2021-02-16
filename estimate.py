@@ -69,7 +69,8 @@ def prop_dml(
     Y: torch.Tensor, 
     D: torch.Tensor, 
     X: torch.Tensor, 
-    true_model
+    true_model,
+    reg_labmda: float = 1.
 ) -> Tuple[float, float, float, float, float]:
     bbox = DoubleMLPEstimator(true_model, X.shape[1]+1,
                          hidden_dims=(32, 32, 32),
@@ -83,7 +84,7 @@ def prop_dml(
     idx_1, idx_2 = indices[:mid_sample], indices[mid_sample:]
 
     # Estimate l_hat
-    bbox.fit(X[idx_1], D[idx_1], Y[idx_1])
+    losses = bbox.fit(X[idx_1], D[idx_1], Y[idx_1], reg_labmda=reg_labmda)
     m_hat, l_hat = bbox.predict(X[idx_2], D[idx_2])
 
     return exp_stats(Y[idx_2], D[idx_2], X[idx_2], m_hat, l_hat, true_model)
