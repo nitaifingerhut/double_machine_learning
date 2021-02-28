@@ -109,10 +109,6 @@ class DoubleMLPEstimator(BaseEstimator):
         mse_loss = torch.nn.MSELoss()
         optimizer = optim.Adam(self.net.parameters(), lr=0.001, betas=(0.9, 0.999))
         
-        
-        dat_losses = []
-        mix_losses = []
-        tot_losses = []
         for epoch in range(max_epochs):
             for i, data in enumerate(dataloader, 0):
 
@@ -130,10 +126,6 @@ class DoubleMLPEstimator(BaseEstimator):
                 dat_loss = mse_loss(m_pred, d) + mse_loss(l_pred, y)
                 mix_loss = torch.abs(torch.mean(dm * dl))
                 loss = dat_loss + reg_labmda * mix_loss
-                
-                dat_losses.append(dat_loss.item())
-                mix_losses.append(mix_loss.item())
-                tot_losses.append(loss.item())
    
                 loss.backward()
                 optimizer.step()
