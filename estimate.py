@@ -84,7 +84,31 @@ def prop_dml(
     idx_1, idx_2 = indices[:mid_sample], indices[mid_sample:]
 
     # Estimate l_hat
-    losses = bbox.fit(X[idx_1], D[idx_1], Y[idx_1], reg_labmda=reg_labmda)
+    bbox, _, _ = bbox.fit(X[idx_1], D[idx_1], Y[idx_1], reg_labmda=reg_labmda)
     m_hat, l_hat = bbox.predict(X[idx_2], D[idx_2])
 
     return exp_stats(Y[idx_2], D[idx_2], X[idx_2], m_hat, l_hat, true_model)
+
+
+def prop_dml_internal_stats(
+    Y: torch.Tensor, 
+    D: torch.Tensor, 
+    X: torch.Tensor, 
+    true_model,
+    reg_labmda: float = 1.
+) -> Tuple[float, float, float, float, float]:
+    bbox = DoubleMLPEstimator(true_model, X.shape[1]+1,
+                         hidden_dims=(32, 32, 32),
+                         activation_params=dict(negative_slope=0.1))
+
+    # Split the data to two parts
+    num_samples = len(Y)
+    mid_sample = num_samples // 2
+    indices = torch.randperm(num_samples)
+
+    idx_1, idx_2 = indices[:mid_sample], indices[mid_sample:]
+
+    # Estimate l_hat
+    bbox, dm, dl = bbox.fit(X[idx_1], D[idx_1], Y[idx_1], reg_labmda=reg_labmda)
+
+    return dm, dl

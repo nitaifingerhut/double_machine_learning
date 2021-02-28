@@ -138,9 +138,10 @@ class DoubleMLPEstimator(BaseEstimator):
                 loss.backward()
                 optimizer.step()
 
+        with torch.no_grad():
+            x, d, y = next(iter(dataloader))
+            m_pred, l_pred = self.net(x, d)
+            dm = d - m_pred
+            dl = y - l_pred
         
-        dat_losses = np.expand_dims(np.asarray(dat_losses), axis=1)
-        mix_losses = np.expand_dims(np.asarray(mix_losses), axis=1)
-        tot_losses = np.expand_dims(np.asarray(tot_losses), axis=1)
-        losses = np.concatenate((dat_losses, mix_losses, tot_losses), axis=1) 
-        return self, losses
+        return self, dm.mean().item(), dl.mean().item()
