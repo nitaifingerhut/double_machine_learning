@@ -110,5 +110,8 @@ def prop_dml_internal_stats(
 
     # Estimate l_hat
     bbox, dm, dl = bbox.fit(X[idx_1], D[idx_1], Y[idx_1], reg_labmda=reg_labmda)
-
-    return dm, dl
+    m_hat, l_hat = bbox.predict(X[idx_2], D[idx_2])
+    
+    theta_hat, _, _, _, _ = exp_stats(Y[idx_2], D[idx_2], X[idx_2], m_hat, l_hat, true_model)
+   
+    return dm, dl, theta_hat
