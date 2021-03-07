@@ -1,5 +1,6 @@
 import torch
 
+from data.funcs import g0, m0
 from models.base_mlp import BaseMLPEstimator
 from models.double_mlp import DoubleMLPEstimator
 from typing import Tuple
@@ -20,8 +21,8 @@ def exp_stats(
         theta_hat, v2 = est_theta(Y, D, m_hat, l_hat)
     
         # Computing residuals
-        m = true_model.m0(X)
-        l = true_model.g0(X) + true_model.theta * m
+        m = m0(X, true_model.lamb)
+        l = g0(X) + true_model.theta * m
 
         dm = m - m_hat
         dl = l - l_hat
