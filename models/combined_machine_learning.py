@@ -1,14 +1,12 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
-from typing import List, Tuple
+from typing import Tuple
 from wrap.stats import est_theta
-from wrap.utils import *
+from wrap.utils import torch_
 
 ACTIVATIONS = {
     'relu': nn.ReLU,
@@ -75,36 +73,46 @@ class CombinedMachineLearning(BaseEstimator):
         """
         :param true_model: true data model.
         :param num_features: Number of features in X.
-        :param theta: ground truth of the policy coefficient theta.
-        :param net_params: params for the neural network.
-        :param reg_lambda: regularization factor to control the bias-variance ratio.
-
+        :param kwargs: params for the neural network.
         """
         self.true_model = true_model
-        self.net = Net(num_features, **kwargs).to(DEVICE).type(DTYPE)
+        self.net = torch_(Net(num_features, **kwargs))
 
-    def predict(self, X: torch.Tensor, D: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def train(self):
         """
-        Predict for a given input.
-        :param X: a numpy 2d array of shape (num_samples,num_features).
-        :param D: a numpy 2d array of shape (num_samples,1).
-        :return: predictions as a numpy arrays of size (num_samples,).
+        Switch the model to train mode.
         """
-        m_pred, l_pred = self.net(X, D)
+        self.net.train()
+
+    def eval(self):
+        """
+        Switch the model to eval mode.
+        """
+        self.net.eval()
+
+    def predict(self, x: torch.Tensor, d: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Predicts (m, l) for a given input (x, d).
+        :param x: a tensor of shape (num_samples,num_features).
+        :param d: a tensor of shape (num_samples,1).
+        :return: predictions as a tensor of size (num_samples,).
+        """
+        with torch.no_grad():
+            m_pred, l_pred = self.net(x, d)
         return m_pred, l_pred
 
-    def fit(self, X: torch.Tensor, D: torch.Tensor, Y: torch.Tensor,
-            batch_size: int = 32, max_epochs: int = 10, reg_clip: float = 1e6):
+    def fit(self, x: torch.Tensor, d: torch.Tensor, y: torch.Tensor,
+            batch_size: int = 32, max_epochs: int = 10, reg_clip: float = 1e5):
         """
         Fit the model to the data.
-        :param X: a numpy 2d array of shape (num_samples,num_features).
-        :param D: a numpy 2d array of shape (num_samples,).
-        :param Y: a numpy 1d array of shape (num_samples,).
+        :param x: a tensor of shape (num_samples,num_features).
+        :param d: a tensor of shape (num_samples,).
+        :param y: a tensor of shape (num_samples,).
         :param batch_size: batch size to use.
         :param max_epochs: max epochs to train.
-        :param print_every: print status every number of epochs.
+        :param reg_clip: range of clipping for regularization scale.
         """
-        dataset = TensorDataset(X, D, Y)
+        dataset = TensorDataset(x, d, y)
         dataloader = DataLoader(dataset, batch_size=batch_size)
 
         mse_loss = torch.nn.MSELoss()
@@ -112,14 +120,15 @@ class CombinedMachineLearning(BaseEstimator):
 
         for epoch in range(max_epochs):
             for i, data in enumerate(dataloader, 0):
-                self.net.zero_grad()
-                x, d, y = data
-                m_pred, l_pred = self.net(x, d)
 
-                dm = d - m_pred
-                dl = y - l_pred
+                optimizer.zero_grad()
+                xb, db, yb = data
+                m_pred, l_pred = self.net(xb, db)
 
-                theta_hat, _ = est_theta(y, d, m_pred, l_pred)
+                dm = db - m_pred
+                dl = yb - l_pred
+
+                theta_hat, _ = est_theta(yb, db, m_pred, l_pred)
                 theta_hat = torch.Tensor([theta_hat])
 
                 if torch.abs(theta_hat) < 1e-12:
@@ -127,7 +136,7 @@ class CombinedMachineLearning(BaseEstimator):
 
                 reg_gamma = torch.clip(1 / theta_hat, min=-reg_clip, max=reg_clip)
 
-                dat_loss = mse_loss(m_pred, d) + mse_loss(l_pred, y)
+                dat_loss = mse_loss(m_pred, db) + mse_loss(l_pred, yb)
                 mix_loss = torch.abs(torch.mean(dm * dl))
                 loss = dat_loss + reg_gamma * mix_loss
 

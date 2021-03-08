@@ -1,15 +1,19 @@
 import numpy as np
 import torch
 
+
 from typing import Dict, Tuple
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-DTYPE = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
+
+
+def torch_(x):
+    return x.to(DEVICE).type(torch.float)
 
 
 def np_to_torch(x: np.ndarray) -> torch.Tensor:
-    return torch.from_numpy(x).to(DEVICE).type(DTYPE)
+    return torch_(torch.from_numpy(x))
 
 
 def torch_to_np(x: torch.Tensor) -> np.ndarray:
@@ -21,6 +25,7 @@ def train_test_split(
     d: torch.Tensor,
     x: torch.Tensor
 ) -> Tuple[Dict, Dict]:
+
     num_samples = len(y)
     mid_sample = num_samples // 2
     indices = torch.randperm(num_samples)
