@@ -27,6 +27,8 @@ class Data(object):
                     'ar';auto-regression (default),
                     'mm';majority-minority,
                     'mg'; multivariate Gaussian.
+
+        :raise KeyError is model is not one of options.
         """
         self.p = p
         self.rho = rho
