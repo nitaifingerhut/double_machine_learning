@@ -65,7 +65,7 @@ class Net(nn.Module):
         return pred[:, 0], pred[:, 1]
 
 
-class DoubleMLPEstimator(BaseEstimator):
+class CoupledMachineLearning(BaseEstimator):
 
     def __init__(
             self,

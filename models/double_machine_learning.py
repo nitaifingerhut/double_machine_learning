@@ -60,7 +60,7 @@ class Net(nn.Module):
         return self.net(x)
 
 
-class BaseMLPEstimator(BaseEstimator):
+class DoubleMachineLearning(BaseEstimator):
 
     def __init__(
             self,
