@@ -1,62 +1,11 @@
 import torch
-import torch.nn as nn
 import torch.optim as optim
 
+from models.mlp import MLP
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
 from typing import Tuple
 from wrap.utils import torch_
-
-
-ACTIVATIONS = {
-    'relu': nn.ReLU,
-    'lrelu': nn.LeakyReLU,
-    'sigmoid': nn.Sigmoid
-}
-
-
-class Net(nn.Module):
-    def __init__(
-            self,
-            num_features: int,
-            hidden_dims: Tuple,
-            activation_type: str = "lrelu",
-            activation_params: dict = dict(),
-            dropout: float = 0.0,
-            batchnorm: bool = True
-    ):
-        """
-        :param num_features: Number of features in X.
-        :param hidden_dims: List containing hidden dimensions of each Linear layer for the main path.
-        :param activation_type: Type of activation function; supports either 'relu', 'lrelu', 'sigmoid'.
-        :param activation_params: Parameters passed to activation function.
-        :param dropout: Amount (p) of Dropout to apply between convolutions. Zero means don't apply dropout.
-        """
-        super(Net, self).__init__()
-
-        if activation_type not in ACTIVATIONS:
-            raise ValueError('Unsupported activation type')
-
-        assert 0 <= dropout < 1
-
-        dims = (num_features,) + hidden_dims
-        layers = []
-        for i in range(len(dims) - 1):
-            layers.append(nn.Linear(dims[i], dims[i+1]))
-            if dropout > 0:
-                layers.append(nn.Dropout(dropout, inplace=True))
-            layers.append(ACTIVATIONS[activation_type](**activation_params))
-        layers.append(nn.Linear(dims[-1], 1))
-        layers.append(ACTIVATIONS[activation_type](**activation_params))
-        self.net = nn.Sequential(*layers)
-
-    def forward(self, x):
-        """
-        Feed forward the network with x.
-        :param x: An input tensor.
-        :return: The network prediction.
-        """
-        return self.net(x)
 
 
 class DoubleMachineLearning(BaseEstimator):
@@ -70,7 +19,7 @@ class DoubleMachineLearning(BaseEstimator):
         :param num_features: Number of features in X.
         :param kwargs: params for the neural network.
         """
-        self.net = torch_(Net(num_features, **kwargs))
+        self.net = torch_(MLP(num_features=num_features, out_features=1, **kwargs))
 
     def train(self):
         """
