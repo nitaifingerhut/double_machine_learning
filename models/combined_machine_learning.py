@@ -102,7 +102,7 @@ class CombinedMachineLearning(BaseEstimator):
         return m_pred, l_pred
 
     def fit(self, x: torch.Tensor, d: torch.Tensor, y: torch.Tensor,
-            batch_size: int = 32, max_epochs: int = 10, reg_clip: float = 1e5):
+            batch_size: int = 32, max_epochs: int = 25, reg_clip: float = 1e5):
         """
         Fit the model to the data.
         :param x: a tensor of shape (num_samples,num_features).
@@ -135,6 +135,7 @@ class CombinedMachineLearning(BaseEstimator):
                     theta_hat = 1e-12
 
                 reg_gamma = torch.clip(1 / theta_hat, min=-reg_clip, max=reg_clip)
+                reg_gamma = torch.abs(reg_gamma)
 
                 dat_loss = mse_loss(m_pred, db) + mse_loss(l_pred, yb)
                 mix_loss = torch.abs(torch.mean(dm * dl))

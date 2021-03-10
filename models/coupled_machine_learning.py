@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -105,7 +106,7 @@ class CoupledMachineLearning(BaseEstimator):
         return m_pred, l_pred
 
     def fit(self, x: torch.Tensor, d: torch.Tensor, y: torch.Tensor,
-            batch_size: int = 32, max_epochs: int = 10, reg_labmda: float = 1.):
+            batch_size: int = 32, max_epochs: int = 50, reg_labmda: float = 0.5):
         """
         Fit the model to the data.
         :param x: a numpy 2d array of shape (num_samples,num_features).
@@ -115,12 +116,16 @@ class CoupledMachineLearning(BaseEstimator):
         :param max_epochs: max epochs to train.
         :param reg_labmda: regularization scale.
         """
+        if not 0 <= reg_labmda <= 1:
+            raise ValueError(reg_labmda)
+            
         dataset = TensorDataset(x, d, y)
         dataloader = DataLoader(dataset, batch_size=batch_size)
 
         mse_loss = torch.nn.MSELoss()
         optimizer = optim.Adam(self.net.parameters(), lr=0.001, betas=(0.9, 0.999))
         
+        self.net.train()
         for epoch in range(max_epochs):
             for i, data in enumerate(dataloader, 0):
 
@@ -133,15 +138,19 @@ class CoupledMachineLearning(BaseEstimator):
 
                 dat_loss = mse_loss(m_pred, db) + mse_loss(l_pred, yb)
                 mix_loss = torch.abs(torch.mean(dm * dl))
-                loss = dat_loss + reg_labmda * mix_loss
+                loss = (1 - reg_labmda) * dat_loss + reg_labmda * mix_loss
    
                 loss.backward()
                 optimizer.step()
 
+        dm = []
+        dl = []
+        self.net.eval()
         with torch.no_grad():
-            xb, db, yb = next(iter(dataloader))
-            m_pred, l_pred = self.net(xb, db)
-            dm = db - m_pred
-            dl = yb - l_pred
+            for i, data in enumerate(dataloader, 0):
+                xb, db, yb = next(iter(dataloader))
+                m_pred, l_pred = self.net(xb, db)
+                dm.append((db - m_pred).mean().item())
+                dl.append((yb - l_pred).mean().item())
         
-        return self, dm.mean().item(), dl.mean().item()
+        return self, np.mean(dm), np.mean(dl)

@@ -44,7 +44,7 @@ class DoubleMachineLearning(BaseEstimator):
         return pred
 
     def fit(self, x: torch.Tensor, y: torch.Tensor,
-            batch_size: int = 32, max_epochs: int = 10):
+            batch_size: int = 32, max_epochs: int = 25):
         """
         Fit the model to the data.
         :param x: a tensor of shape (num_samples,num_features).
