@@ -8,7 +8,6 @@ from torch.utils.data import TensorDataset, DataLoader
 from typing import Tuple
 from wrap.utils import torch_
 
-
 ACTIVATIONS = {
     'relu': nn.ReLU,
     'lrelu': nn.LeakyReLU,
@@ -81,6 +80,8 @@ class CoupledMachineLearning(BaseEstimator):
         """
         self.true_model = true_model
         self.net = torch_(Net(num_features, **kwargs))
+        # Store history
+        self.history = None
 
     def train(self):
         """
@@ -106,7 +107,8 @@ class CoupledMachineLearning(BaseEstimator):
         return m_pred, l_pred
 
     def fit(self, x: torch.Tensor, d: torch.Tensor, y: torch.Tensor,
-            batch_size: int = 32, max_epochs: int = 50, reg_labmda: float = 0.5):
+            batch_size: int = 32, max_epochs: int = 50, reg_labmda: float = 0.5,
+            lr : float = 0.001):
         """
         Fit the model to the data.
         :param x: a numpy 2d array of shape (num_samples,num_features).
@@ -123,7 +125,13 @@ class CoupledMachineLearning(BaseEstimator):
         dataloader = DataLoader(dataset, batch_size=batch_size)
 
         mse_loss = torch.nn.MSELoss()
-        optimizer = optim.Adam(self.net.parameters(), lr=0.001, betas=(0.9, 0.999))
+        optimizer = optim.Adam(self.net.parameters(), lr=lr, betas=(0.9, 0.999))
+        
+        # Store loss (for debugging)
+        epoch_history = []
+        loss_history = []
+        datloss_history = []
+        mixloss_history = []
         
         self.net.train()
         for epoch in range(max_epochs):
@@ -142,7 +150,17 @@ class CoupledMachineLearning(BaseEstimator):
    
                 loss.backward()
                 optimizer.step()
+        
+                # Store history
+                epoch_history.append(epoch)
+                loss_history.append(loss.detach().cpu().numpy().flatten()[0])
+                datloss_history.append(dat_loss.detach().cpu().numpy().flatten()[0])
+                mixloss_history.append(mix_loss.detach().cpu().numpy().flatten()[0])
 
+        # Store history
+        self.history = {'Epoch':epoch_history, 'Loss':loss_history, 
+                        'Dat-Loss':datloss_history, 'Mix-Loss':mixloss_history}
+        
         dm = []
         dl = []
         self.net.eval()
@@ -150,7 +168,10 @@ class CoupledMachineLearning(BaseEstimator):
             for i, data in enumerate(dataloader, 0):
                 xb, db, yb = next(iter(dataloader))
                 m_pred, l_pred = self.net(xb, db)
-                dm.append((db - m_pred).mean().item())
-                dl.append((yb - l_pred).mean().item())
+                dm.append((db - m_pred).cpu().numpy())
+                dl.append((yb - l_pred).cpu().numpy())
+                
+        dm = np.hstack(dm)
+        dl = np.hstack(dl)
         
-        return self, np.mean(dm), np.mean(dl)
+        return self, dm, dl
