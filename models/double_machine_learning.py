@@ -9,12 +9,7 @@ from wrap.utils import torch_
 
 
 class DoubleMachineLearning(BaseEstimator):
-
-    def __init__(
-            self,
-            num_features: int,
-            **kwargs
-    ):
+    def __init__(self, num_features: int, **kwargs):
         """
         :param num_features: Number of features in X.
         :param kwargs: params for the neural network.
@@ -43,8 +38,13 @@ class DoubleMachineLearning(BaseEstimator):
             pred = self.net(x)
         return pred
 
-    def fit(self, x: torch.Tensor, y: torch.Tensor,
-            batch_size: int = 32, max_epochs: int = 25):
+    def fit(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        batch_size: int = 32,
+        max_epochs: int = 25,
+    ):
         """
         Fit the model to the data.
         :param x: a tensor of shape (num_samples,num_features).

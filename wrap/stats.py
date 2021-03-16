@@ -5,13 +5,10 @@ from typing import Tuple
 
 
 def est_theta(
-    y: torch.Tensor,
-    d: torch.Tensor,
-    m_hat: torch.Tensor,
-    l_hat: torch.Tensor
+    y: torch.Tensor, d: torch.Tensor, m_hat: torch.Tensor, l_hat: torch.Tensor
 ) -> Tuple[float, float]:
     # Compute V_hat
-    v_hat = (d - m_hat)
+    v_hat = d - m_hat
 
     # Mean squared V-hat
     v2 = torch.mean(v_hat * v_hat)
@@ -23,11 +20,7 @@ def est_theta(
 
 
 def exp_stats(
-    x: torch.Tensor,
-    m_hat: torch.Tensor,
-    l_hat: torch.Tensor,
-    theta: float,
-    lamb: float
+    x: torch.Tensor, m_hat: torch.Tensor, l_hat: torch.Tensor, theta: float, lamb: float
 ) -> Tuple[float, float, float, float]:
 
     # Computing residuals

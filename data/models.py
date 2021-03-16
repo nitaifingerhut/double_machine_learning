@@ -9,6 +9,7 @@ class CovarianceAR1(object):
     """
     Data model of AR1(rho) process.
     """
+
     def __init__(self, rho: float):
         self.rho = rho
 
@@ -18,8 +19,8 @@ class CovarianceAR1(object):
         :param p: dimension of features.
         :return: a tuple with mean vector and covariance matrix.
         """
-        mu = np.zeros(p, )
-        rho = np.ones(p, ) * self.rho
+        mu = np.zeros(p,)
+        rho = np.ones(p,) * self.rho
         sigma = np.zeros(shape=(p, p))
         for i in range(p):
             for j in range(i, p):
@@ -32,7 +33,8 @@ class MajorityMinority(object):
     """
     Data model of majority-minority groups.
     """
-    def __init__(self, rho: float, mmu: float = 3.):
+
+    def __init__(self, rho: float, mmu: float = 3.0):
         self.rho = rho
         self.mmu = mmu
 
@@ -44,7 +46,7 @@ class MajorityMinority(object):
         """
         p1 = round(self.rho * p)
         p2 = p - p1
-        mu = np.concatenate((np.zeros((p1,)), self.mmu * np.ones(p2, )), )
+        mu = np.concatenate((np.zeros((p1,)), self.mmu * np.ones(p2,)),)
         sigma = np.identity(p)
         return mu, sigma
 
@@ -53,6 +55,7 @@ class MultivariateGaussian(object):
     """
     Data model of multivariate Gaussian.
     """
+
     def __init__(self, rho: float):
         self.rho = rho
 
@@ -62,4 +65,4 @@ class MultivariateGaussian(object):
         :param p: dimension of features.
         :return: a tuple with mean vector and covariance matrix.
         """
-        return np.zeros(p, ), np.identity(p)
+        return np.zeros(p,), np.identity(p)

@@ -6,17 +6,13 @@ from data.funcs import g0, m0
 from wrap.utils import np_to_torch
 
 
-MODELS = dict(
-    ar=CovarianceAR1,
-    mg=MultivariateGaussian,
-    mm=MajorityMinority,
-)
+MODELS = dict(ar=CovarianceAR1, mg=MultivariateGaussian, mm=MajorityMinority,)
 
 
 class Data(object):
-
-    def __init__(self, p: int, rho: float, theta: float,
-                 lamb: float, model: str = 'ar'):
+    def __init__(
+        self, p: int, rho: float, theta: float, lamb: float, model: str = "ar"
+    ):
         """
         :param p: number of features in each example.
         :param rho: tunable parameter.
@@ -45,6 +41,6 @@ class Data(object):
         with torch.no_grad():
             mvn = np.random.multivariate_normal(self.mu, self.sigma, n)
             x = np_to_torch(mvn)
-            d = m0(x, self.lamb) + 0.1 * np_to_torch(np.random.randn(n, ))
-            y = d * self.theta + g0(x) + 0.1 * np_to_torch(np.random.randn(n, ))
+            d = m0(x, self.lamb) + 0.1 * np_to_torch(np.random.randn(n,))
+            y = d * self.theta + g0(x) + 0.1 * np_to_torch(np.random.randn(n,))
         return y, d, x

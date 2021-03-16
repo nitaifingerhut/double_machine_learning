@@ -3,6 +3,7 @@ channels:
 - pytorch
 - defaults
 dependencies:
+- black
 - cffi
 - cmake
 - jupyter

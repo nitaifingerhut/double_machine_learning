@@ -8,22 +8,18 @@ from torch.utils.data import TensorDataset, DataLoader
 from typing import Tuple
 from wrap.utils import torch_
 
-ACTIVATIONS = {
-    'relu': nn.ReLU,
-    'lrelu': nn.LeakyReLU,
-    'sigmoid': nn.Sigmoid
-}
+ACTIVATIONS = {"relu": nn.ReLU, "lrelu": nn.LeakyReLU, "sigmoid": nn.Sigmoid}
 
 
 class Net(nn.Module):
     def __init__(
-            self,
-            num_features: int,
-            hidden_dims: Tuple,
-            activation_type: str = "lrelu",
-            activation_params: dict = dict(),
-            dropout: float = 0.0,
-            batchnorm: bool = True
+        self,
+        num_features: int,
+        hidden_dims: Tuple,
+        activation_type: str = "lrelu",
+        activation_params: dict = dict(),
+        dropout: float = 0.0,
+        batchnorm: bool = True,
     ):
         """
         :param num_features: Number of features in X.
@@ -35,14 +31,14 @@ class Net(nn.Module):
         super(Net, self).__init__()
 
         if activation_type not in ACTIVATIONS:
-            raise ValueError('Unsupported activation type')
+            raise ValueError("Unsupported activation type")
 
         assert 0 <= dropout < 1
 
         dims = (num_features,) + hidden_dims
         layers = []
         for i in range(len(dims) - 1):
-            layers.append(nn.Linear(dims[i], dims[i+1]))
+            layers.append(nn.Linear(dims[i], dims[i + 1]))
             if dropout > 0:
                 layers.append(nn.Dropout(dropout, inplace=True))
             layers.append(ACTIVATIONS[activation_type](**activation_params))
@@ -57,19 +53,13 @@ class Net(nn.Module):
         :param d: An input tensor of size (batch_size,1).
         :return: The network prediction.
         """
-        x = torch.cat((x,d.unsqueeze(1)), axis=1)
+        x = torch.cat((x, d.unsqueeze(1)), axis=1)
         pred = self.net(x)
         return pred[:, 0], pred[:, 1]
 
 
 class CoupledMachineLearning(BaseEstimator):
-
-    def __init__(
-            self,
-            true_model,
-            num_features: int,
-            **kwargs
-    ):
+    def __init__(self, true_model, num_features: int, **kwargs):
         """
         :param true_model: true data model.
         :param num_features: Number of features in X.
@@ -95,7 +85,9 @@ class CoupledMachineLearning(BaseEstimator):
         """
         self.net.eval()
 
-    def predict(self, x: torch.Tensor, d: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def predict(
+        self, x: torch.Tensor, d: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Predicts (m, l) for a given input (x, d).
         :param x: a tensor of shape (num_samples,num_features).
@@ -106,9 +98,16 @@ class CoupledMachineLearning(BaseEstimator):
             m_pred, l_pred = self.net(x, d)
         return m_pred, l_pred
 
-    def fit(self, x: torch.Tensor, d: torch.Tensor, y: torch.Tensor,
-            batch_size: int = 32, max_epochs: int = 50, reg_labmda: float = 0.5,
-            lr : float = 0.001):
+    def fit(
+        self,
+        x: torch.Tensor,
+        d: torch.Tensor,
+        y: torch.Tensor,
+        batch_size: int = 32,
+        max_epochs: int = 50,
+        reg_labmda: float = 0.5,
+        lr: float = 0.001,
+    ):
         """
         Fit the model to the data.
         :param x: a numpy 2d array of shape (num_samples,num_features).
@@ -120,19 +119,19 @@ class CoupledMachineLearning(BaseEstimator):
         """
         if not 0 <= reg_labmda <= 1:
             raise ValueError(reg_labmda)
-            
+
         dataset = TensorDataset(x, d, y)
         dataloader = DataLoader(dataset, batch_size=batch_size)
 
         mse_loss = torch.nn.MSELoss()
         optimizer = optim.Adam(self.net.parameters(), lr=lr, betas=(0.9, 0.999))
-        
+
         # Store loss (for debugging)
         epoch_history = []
         loss_history = []
         datloss_history = []
         mixloss_history = []
-        
+
         self.net.train()
         for epoch in range(max_epochs):
             for i, data in enumerate(dataloader, 0):
@@ -140,17 +139,17 @@ class CoupledMachineLearning(BaseEstimator):
                 optimizer.zero_grad()
                 xb, db, yb = data
                 m_pred, l_pred = self.net(xb, db)
-                
+
                 dm = db - m_pred
                 dl = yb - l_pred
 
                 dat_loss = mse_loss(m_pred, db) + mse_loss(l_pred, yb)
                 mix_loss = torch.abs(torch.mean(dm * dl))
                 loss = (1 - reg_labmda) * dat_loss + reg_labmda * mix_loss
-   
+
                 loss.backward()
                 optimizer.step()
-        
+
                 # Store history
                 epoch_history.append(epoch)
                 loss_history.append(loss.detach().cpu().numpy().flatten()[0])
@@ -158,9 +157,13 @@ class CoupledMachineLearning(BaseEstimator):
                 mixloss_history.append(mix_loss.detach().cpu().numpy().flatten()[0])
 
         # Store history
-        self.history = {'Epoch':epoch_history, 'Loss':loss_history, 
-                        'Dat-Loss':datloss_history, 'Mix-Loss':mixloss_history}
-        
+        self.history = {
+            "Epoch": epoch_history,
+            "Loss": loss_history,
+            "Dat-Loss": datloss_history,
+            "Mix-Loss": mixloss_history,
+        }
+
         dm = []
         dl = []
         self.net.eval()
@@ -170,8 +173,8 @@ class CoupledMachineLearning(BaseEstimator):
                 m_pred, l_pred = self.net(xb, db)
                 dm.append((db - m_pred).cpu().numpy())
                 dl.append((yb - l_pred).cpu().numpy())
-                
+
         dm = np.hstack(dm)
         dl = np.hstack(dl)
-        
+
         return self, dm, dl

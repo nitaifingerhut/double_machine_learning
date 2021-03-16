@@ -8,22 +8,18 @@ from typing import Tuple
 from wrap.stats import est_theta
 from wrap.utils import torch_
 
-ACTIVATIONS = {
-    'relu': nn.ReLU,
-    'lrelu': nn.LeakyReLU,
-    'sigmoid': nn.Sigmoid
-}
+ACTIVATIONS = {"relu": nn.ReLU, "lrelu": nn.LeakyReLU, "sigmoid": nn.Sigmoid}
 
 
 class Net(nn.Module):
     def __init__(
-            self,
-            num_features: int,
-            hidden_dims: Tuple,
-            activation_type: str = "lrelu",
-            activation_params: dict = dict(),
-            dropout: float = 0.0,
-            batchnorm: bool = True
+        self,
+        num_features: int,
+        hidden_dims: Tuple,
+        activation_type: str = "lrelu",
+        activation_params: dict = dict(),
+        dropout: float = 0.0,
+        batchnorm: bool = True,
     ):
         """
         :param num_features: Number of features in X.
@@ -35,7 +31,7 @@ class Net(nn.Module):
         super(Net, self).__init__()
 
         if activation_type not in ACTIVATIONS:
-            raise ValueError('Unsupported activation type')
+            raise ValueError("Unsupported activation type")
 
         assert 0 <= dropout < 1
 
@@ -63,13 +59,7 @@ class Net(nn.Module):
 
 
 class CombinedMachineLearning(BaseEstimator):
-
-    def __init__(
-            self,
-            true_model,
-            num_features: int,
-            **kwargs
-    ):
+    def __init__(self, true_model, num_features: int, **kwargs):
         """
         :param true_model: true data model.
         :param num_features: Number of features in X.
@@ -90,7 +80,9 @@ class CombinedMachineLearning(BaseEstimator):
         """
         self.net.eval()
 
-    def predict(self, x: torch.Tensor, d: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def predict(
+        self, x: torch.Tensor, d: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Predicts (m, l) for a given input (x, d).
         :param x: a tensor of shape (num_samples,num_features).
@@ -101,8 +93,15 @@ class CombinedMachineLearning(BaseEstimator):
             m_pred, l_pred = self.net(x, d)
         return m_pred, l_pred
 
-    def fit(self, x: torch.Tensor, d: torch.Tensor, y: torch.Tensor,
-            batch_size: int = 32, max_epochs: int = 25, reg_clip: float = 1e5):
+    def fit(
+        self,
+        x: torch.Tensor,
+        d: torch.Tensor,
+        y: torch.Tensor,
+        batch_size: int = 32,
+        max_epochs: int = 25,
+        reg_clip: float = 1e5,
+    ):
         """
         Fit the model to the data.
         :param x: a tensor of shape (num_samples,num_features).
