@@ -5,7 +5,7 @@ import torch.optim as optim
 
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
-from typing import Tuple
+from typing import Dict, Tuple
 from wrap.utils import torch_
 
 ACTIVATIONS = {"relu": nn.ReLU, "lrelu": nn.LeakyReLU, "sigmoid": nn.Sigmoid}
@@ -98,11 +98,30 @@ class CoupledMachineLearning(BaseEstimator):
             m_pred, l_pred = self.net(x, d)
         return m_pred, l_pred
 
+    def eval(self, x: torch.Tensor, d: torch.Tensor, y: torch.Tensor, 
+             reg_labmda: float, with_grad: bool = False):
+        m_pred, l_pred = self.predict(x, d)
+        dm = d - m_pred
+        dl = y - l_pred
+        dat_loss = torch.nn.MSELoss()(m_pred, d) + torch.nn.MSELoss()(l_pred, y)
+        mix_loss = torch.abs(torch.mean(dm * dl))
+        loss = (1 - reg_labmda) * dat_loss + reg_labmda * mix_loss
+        return loss
+        
+#     def fit(
+#         self,
+#         x: torch.Tensor,
+#         d: torch.Tensor,
+#         y: torch.Tensor,
+#         batch_size: int = 32,
+#         max_epochs: int = 50,
+#         reg_labmda: float = 0.5,
+#         lr: float = 0.001,
+#     ):
     def fit(
         self,
-        x: torch.Tensor,
-        d: torch.Tensor,
-        y: torch.Tensor,
+        train: Dict,
+        test: Dict,
         batch_size: int = 32,
         max_epochs: int = 50,
         reg_labmda: float = 0.5,
@@ -120,8 +139,8 @@ class CoupledMachineLearning(BaseEstimator):
         if not 0 <= reg_labmda <= 1:
             raise ValueError(reg_labmda)
 
-        dataset = TensorDataset(x, d, y)
-        dataloader = DataLoader(dataset, batch_size=batch_size)
+        train_dataset = TensorDataset(train['x'], train['d'], train['y'])
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
 
         mse_loss = torch.nn.MSELoss()
         optimizer = optim.Adam(self.net.parameters(), lr=lr, betas=(0.9, 0.999))
@@ -131,10 +150,11 @@ class CoupledMachineLearning(BaseEstimator):
         loss_history = []
         datloss_history = []
         mixloss_history = []
+        test_loss_history = []
 
         self.net.train()
         for epoch in range(max_epochs):
-            for i, data in enumerate(dataloader, 0):
+            for i, data in enumerate(train_dataloader, 0):
 
                 optimizer.zero_grad()
                 xb, db, yb = data
@@ -155,6 +175,9 @@ class CoupledMachineLearning(BaseEstimator):
                 loss_history.append(loss.detach().cpu().numpy().flatten()[0])
                 datloss_history.append(dat_loss.detach().cpu().numpy().flatten()[0])
                 mixloss_history.append(mix_loss.detach().cpu().numpy().flatten()[0])
+                  
+                test_loss = self.eval(test['x'], test['d'], test['y'], reg_labmda)
+                test_loss_history.append(test_loss.item())
 
         # Store history
         self.history = {
@@ -162,14 +185,15 @@ class CoupledMachineLearning(BaseEstimator):
             "Loss": loss_history,
             "Dat-Loss": datloss_history,
             "Mix-Loss": mixloss_history,
+            "Test-Loss": test_loss_history
         }
 
         dm = []
         dl = []
         self.net.eval()
         with torch.no_grad():
-            for i, data in enumerate(dataloader, 0):
-                xb, db, yb = next(iter(dataloader))
+            for i, data in enumerate(train_dataloader, 0):
+                xb, db, yb = data
                 m_pred, l_pred = self.net(xb, db)
                 dm.append((db - m_pred).cpu().numpy())
                 dl.append((yb - l_pred).cpu().numpy())
