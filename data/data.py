@@ -32,7 +32,7 @@ class Data(object):
         self.lamb = lamb
         self.mu, self.sigma = MODELS[model](self.rho)(p)
 
-    def generate(self, n: int):
+    def generate(self, n: int, noise=0.1):
         """
         Return n samples of data.
         :param n: number of samples to generate.
@@ -41,6 +41,6 @@ class Data(object):
         with torch.no_grad():
             mvn = np.random.multivariate_normal(self.mu, self.sigma, n)
             x = np_to_torch(mvn)
-            d = m0(x, self.lamb) + 0.1 * np_to_torch(np.random.randn(n,))
-            y = d * self.theta + g0(x) + 0.1 * np_to_torch(np.random.randn(n,))
+            d = m0(x, self.lamb) + noise * np_to_torch(np.random.randn(n,))
+            y = d * self.theta + g0(x) + noise * np_to_torch(np.random.randn(n,))
         return y, d, x
