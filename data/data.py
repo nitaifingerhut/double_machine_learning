@@ -32,10 +32,11 @@ class Data(object):
         self.lamb = lamb
         self.mu, self.sigma = MODELS[model](self.rho)(p)
 
-    def generate(self, n: int, noise=0.1):
+    def generate(self, n: int, noise: float = 0.1):
         """
         Return n samples of data.
         :param n: number of samples to generate.
+        :param noise: noise magnitude.
         :return: a tuple of tensors of the double machine learning model.
         """
         with torch.no_grad():
