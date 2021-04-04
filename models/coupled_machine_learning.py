@@ -1,8 +1,10 @@
 import numpy as np
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from pathlib import Path
 from sklearn.base import BaseEstimator
 from torch.utils.data import TensorDataset, DataLoader
 from typing import Dict, Tuple
@@ -152,6 +154,8 @@ class CoupledMachineLearning(BaseEstimator):
         mixloss_history = []
         test_loss_history = []
 
+        best_model_path = Path("~/.best_model.pt").expanduser()
+        min_loss = None
         self.net.train()
         for epoch in range(max_epochs):
             for i, data in enumerate(train_dataloader, 0):
@@ -179,6 +183,10 @@ class CoupledMachineLearning(BaseEstimator):
                 test_loss = self.eval(test['x'], test['d'], test['y'], reg_labmda)
                 test_loss_history.append(test_loss.item())
 
+                if min_loss is None or test_loss_history[-1] < min_loss:
+                    min_loss = test_loss_history[-1]
+                    torch.save(self.net, best_model_path)
+
         # Store history
         self.history = {
             "Epoch": epoch_history,
@@ -190,13 +198,17 @@ class CoupledMachineLearning(BaseEstimator):
 
         dm = []
         dl = []
-        self.net.eval()
+        test_dataset = TensorDataset(test['x'], test['d'], test['y'])
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
+        best_model = torch.load(best_model_path)
+        best_model.eval()
         with torch.no_grad():
-            for i, data in enumerate(train_dataloader, 0):
+            for i, data in enumerate(test_dataloader, 0):
                 xb, db, yb = data
-                m_pred, l_pred = self.net(xb, db)
+                m_pred, l_pred = best_model(xb, db)
                 dm.append((db - m_pred).cpu().numpy())
                 dl.append((yb - l_pred).cpu().numpy())
+        os.remove(best_model_path)
 
         dm = np.hstack(dm)
         dl = np.hstack(dl)
